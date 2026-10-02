@@ -1,0 +1,8 @@
+{
+  "name": "Golden Echo — Reminiscence Journal & Vision Board",
+  "description": "A senior-friendly reminiscence journal, heirloom memory archive, and dynamic vision board for preserving life stories and imagining what comes next.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
