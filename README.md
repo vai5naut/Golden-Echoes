@@ -1,160 +1,149 @@
-# Golden Echo 🕊️
+# Golden Echo
 
-> **A gentle emotional-wellbeing and reminiscence companion for older adults and families.**  
-> *"Remember what shaped you. Make room for what comes next."*
+Golden Echo is an emotional wellbeing and reminiscence app for older adults and their families.
 
-Golden Echo helps people move through a continuous, life-affirming emotional loop:
-$$\textbf{REMEMBER} \longrightarrow \textbf{REFLECT} \longrightarrow \textbf{LOOK FORWARD}$$
+I built it around a simple idea: wellbeing as we grow older is not only about physical health. Memory, identity, relationships, and having things to look forward to matter too.
 
-Rather than measuring vitals or acting like a productivity tool, Golden Echo feels like a warm digital heirloom—an emotionally safe space that an older adult can understand without instructions, and an experience a grandchild and grandparent can use together.
+The app helps someone remember a story, preserve it in their own voice, reflect on it, and sometimes turn it into something they want to do in the future.
 
----
+**Remember → Reflect → Look Forward**
 
-## ✨ Core Highlights
+## What you can do
 
-* **Today’s Echo**: A sensory-anchored home experience with gentle prompts (*"What sound instantly brings you back to your childhood?"*) rather than interrogation forms.
-* **"This One Can Wait" Refusal**: Declining a memory is treated with complete dignity and no guilt—providing peaceful alternatives (*Another memory*, *Visit one of my stories*, *Looking Forward*, or *A quiet moment*).
-* **Multi-Modal Voice Keepsakes**: High-fidelity microphone recording and playback stored directly as native `Blob` data in browser-local **IndexedDB**, eliminating `localStorage` quota restrictions.
-* **Non-Interpretive AI Reflection**: Powered by **Gemini 3.8 Flash** via `@google/genai`. The model strictly *notices rather than interprets*, acknowledging only explicitly stated details without unsolicited emotional labeling.
-* **"Looking Forward" Intentions**: Connects past memories directly to future micro-intentions (*"Make my mother's chai with Anya"*), each broken down into **One Gentle Next Step**.
-* **Heirloom Keepsake Edition**: A print/PDF-ready digital book with a formal cover, chapter index, voice keepsake indicators, and elegant typography for physical binding or family sharing.
-* **Zero-Pill Typography & Comfort**: Designed with dignified typographic separators, 4 comfort color themes (*Warm Parchment*, *Sepia*, *High Contrast*, *Twilight*), text scaling up to 130%, and native speech-to-text & text-to-speech.
-* **Local-First Privacy**: 100% browser-local storage. No accounts, logins, advertising tracking, or data harvesting. Complete JSON archive export and import.
+On the home screen, Golden Echo gives one memory prompt at a time, usually based on sensory details:
 
----
+> What sound instantly brings you back to your childhood?
 
-## 🧭 The 4 Primary Destinations
+A person can type the story, dictate it, or record it in their own voice.
 
-The interface avoids cluttered navigation, focusing on four clear destinations:
+They can then:
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                 GOLDEN ECHO                                 │
-│          Today    ·    My Stories    ·    Looking Forward    ·    Keepsake   │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+- save the memory to their personal archive
+- choose who they would want to remember it
+- ask for an optional AI reflection
+- connect the memory to something they want to do in the future
+- turn their collection into a printable keepsake
 
-### 1. Today
-* **Today’s Echo**: The primary card featuring an evocative sensory prompt.
-* **Gentle Actions**: `Tell this story`, `Give me another memory`, or `Not today`.
-* **Quiet Spaces & Sensory Reflection**:
-  * **Ambient Soundscapes**: Synthesized hearth fire, summer rain, morning birds, and vinyl warmth generated directly in the browser via the Web Audio API.
-  * **Mindful Place Walk**: A 4-step sensory grounding visualization to revisit a personal sanctuary.
-  * **Music Memory Box**: Storing evocative songs that reconnect someone to a loved one or era.
-  * **Keepsake Letters**: Writing private, heartfelt notes dedicated to family members.
+If someone does not want to answer a prompt, they can simply choose **Not today**. The app moves on without streaks, reminders, or pressure.
 
-### 2. My Stories
-* **5-Chapter Life Taxonomy**:
-  * *Chapter I: Roots & Childhood*
-  * *Chapter II: Youth & Coming of Age*
-  * *Chapter III: Loved Ones & Traditions*
-  * *Chapter IV: Everyday Joys*
-  * *Chapter V: Wisdom & Legacy*
-* **Search & Filter**: Keyword search, decade selector (`1930s`–`Recent`), starred favorites, and sorting.
-* **Story Cards**: Prominent voice playback (`Hear this story in my voice`), "Read Aloud" narration, and inline reflection sparks.
+## Why I built it this way
 
-### 3. Looking Forward
-* **Things I’m Looking Forward To**: Simple, positive aspirations (e.g., visiting a garden, making a family recipe, calling an old friend).
-* **One Gentle Next Step**: Lowers cognitive friction by identifying one immediate, doable action.
-* **Emotional Lineage**: Shows which memory sparked each intention (e.g., `Born from: "Sunday Bread"`).
-* **Time Horizons**: Organized into *This Season*, *This Year*, or *Someday*.
+Golden Echo draws on ideas from reminiscence and narrative approaches to wellbeing, where telling and revisiting personal stories can help people make sense of identity, relationships, and life experiences.
 
-### 4. Keepsake
-* **Heirloom Edition**: Formats all preserved stories and future hopes into an editorial book layout.
-* **Print / PDF Layout**: Strips away digital chrome for clean, margins-aware printing or digital PDF archival.
-* **Voice Indicators**: Marks stories preserved in original spoken audio.
+I did not want the product to feel like a medical app or a productivity dashboard. I wanted it to feel closer to a family journal.
 
----
+One part I cared about especially was connecting memory with the future.
 
-## 🔄 The Guided Story Journey
+For example, remembering Sunday chai with your mother might lead to:
 
-In the **Memory Composer**, users are gently guided through four interconnected steps:
+**I want to make her chai recipe with Anya.**
 
-1. **Remember**: Speak, dictate via speech-to-text, or type a sensory recollection.
-2. **Preserve**: Choose who should remember this story (*Just me*, *My children*, *My grandchildren*, *Someone special*).
-3. **Reflect**: Optionally click *"Linger with this memory"*. The AI notices sensory details and returns one observation and at most one gentle question.
-4. **Look Forward**: Optionally carry a piece of the memory forward into a concrete hope with one gentle next step.
+Golden Echo then asks for one small next step, such as:
 
----
+**Ask Anya which Sunday she is free.**
 
-## 🛠️ Architecture & Tech Stack
+This means the product is not only an archive of the past. Memories can become reasons to reconnect, revisit a place, make something again, or spend time with someone.
 
-```
-Golden Echo Application
-├── Client (Browser SPA)
-│   ├── React 19 / TypeScript
-│   ├── Tailwind CSS (Zero-pill typographic design)
-│   ├── Lucide Icons
-│   ├── IndexedDB Engine (voice recording Blobs in golden_echo_audio_db)
-│   ├── Web Audio API (ambient soundscape generators)
-│   └── Web Speech API (speech recognition & text-to-speech)
-│
-└── Backend Server (server.ts)
-    ├── Express.js + Vite middleware
-    └── POST /api/guide-reflection
-        ├── Google Gen AI SDK (@google/genai)
-        ├── Gemini 3.8 Flash model
-        └── Deterministic heuristic fallback engine (offline-ready)
-```
+## AI reflection
 
----
+AI reflection is optional.
 
-## 🚀 Getting Started
+Golden Echo uses Gemini through a server endpoint. I deliberately limited what the model is allowed to do.
 
-### Prerequisites
-* **Node.js**: `v18.0.0` or higher
-* **npm**: `v9.0.0` or higher
-* **Gemini API Key**: (Optional, for live AI reflections; deterministic offline heuristics run automatically if omitted)
+It is asked to notice details in the story rather than interpret the person's emotions. It returns one short observation and, where useful, one question.
 
-### Installation
+For example, instead of saying:
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-username/golden-echo.git
-   cd golden-echo
-   ```
+> That sounds like a deeply emotional memory.
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+it might notice:
 
-3. **Configure environment variables**:
-   ```bash
-   cp .env.example .env
-   ```
-   Add your Gemini API key inside `.env`:
-   ```env
-   GEMINI_API_KEY="your-gemini-api-key-here"
-   PORT=3000
-   ```
+> You remembered the sound of the pressure cooker and everyone sitting together at the table. Is there one part of that evening you can still picture clearly?
 
-4. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-   Open your browser at `http://localhost:3000`.
+If someone indicates that they do not want to continue, the reflection stops.
 
-### Production Build
+## Main sections
+
+### Today
+
+One memory prompt, with the option to tell the story, choose another prompt, or leave it for another day.
+
+There are also a few quieter activities such as ambient sounds, a sensory place exercise, a music memory box, and private letters.
+
+### My Stories
+
+Saved memories are organised into five broad life chapters:
+
+- Roots & Childhood
+- Youth & Coming of Age
+- Loved Ones & Traditions
+- Everyday Joys
+- Wisdom & Legacy
+
+Stories can include the original voice recording and can also be read aloud.
+
+### Looking Forward
+
+People can save things they still want to experience, from making an old family recipe to visiting a familiar place or calling an old friend.
+
+An intention can also be linked back to the memory that inspired it.
+
+### Keepsake
+
+Saved stories can be arranged into a simple book-style layout and printed or saved as a PDF.
+
+## Accessibility
+
+Because the app is designed with older adults in mind, I included:
+
+- larger text settings
+- high-contrast and low-light themes
+- large tap targets
+- speech-to-text
+- text-to-speech
+- adjustable reading speed
+- reduced-motion support
+
+## Privacy
+
+Stories, photos, settings, and voice recordings are stored in the browser.
+
+There is no account or login.
+
+Voice recordings are stored as `Blob` files in IndexedDB rather than being placed in `localStorage`.
+
+When someone chooses to use the optional AI reflection, the text required for that reflection is sent to the Gemini API through the server.
+
+Users can export their archive as JSON and import it again later.
+
+## Tech
+
+- React
+- TypeScript
+- Tailwind CSS
+- Express
+- IndexedDB
+- Web Audio API
+- Web Speech API
+- Google Gen AI SDK
+- Gemini
+
+The AI reflection is handled through:
+
+`POST /api/guide-reflection`
+
+If Gemini is unavailable, the app falls back to a small rule-based reflection system.
+
+## Running locally
+
+Requirements:
+
+- Node.js 18+
+- npm 9+
+- Gemini API key, if you want live AI reflection
+
+Clone the repository:
 
 ```bash
-# Build the client bundle
-npm run build
-
-# Start the full-stack production server
-npm start
-```
-
----
-
-## 🔒 Privacy, Safety & Ethical Guidelines
-
-* **Zero Health/Medical Claims**: Golden Echo is an emotional-wellbeing and reminiscence companion designed with older adults and families in mind. It does **not** claim to diagnose, treat, prevent, or cure dementia, cognitive decline, depression, loneliness, or any clinical condition.
-* **Local-First Data Ownership**: All memories, photos, and voice recordings remain entirely in the user's browser storage. No accounts or logins required.
-* **Respectful AI Behavior**: The reflection prompt is engineered strictly to *notice rather than interpret*. It never tells users how they ought to feel and withdraws safely if a user indicates reluctance or discomfort (*"This one can wait"*).
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See `LICENSE` for details.
+git clone https://github.com/your-username/golden-echo.git
+cd golden-echo
