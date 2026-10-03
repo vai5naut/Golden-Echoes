@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { X, Type, Eye, Download, Upload, RotateCcw, Volume2, ShieldCheck } from 'lucide-react';
 import { ComfortSettings, ColorTheme, MemoryEntry, VisionItem } from '../types';
+import { getAudioBlob, blobToBase64, base64ToBlob, saveAudioBlob, clearAllAudio } from '../utils/audioStorage';
 
 interface SettingsModalProps {
   settings: ComfortSettings;
@@ -22,6 +23,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const fontOptions = [
     { label: 'Standard', scale: 1.0, preview: 'Aa' },
@@ -36,23 +39,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'twilight', label: 'Soft Twilight', desc: 'Gentle dark slate for evening reflection', bgClass: 'bg-stone-900 border-stone-700 text-white' },
   ];
 
-  const handleExport = () => {
-    const backupData = {
-      app: 'Golden Echo',
-      version: '2.0',
-      exportedAt: new Date().toISOString(),
-      memories,
-      visions,
-      settings,
-    };
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const memoriesWithAudio = await Promise.all(
+        memories.map(async (m) => {
+          if (m.hasVoiceNote) {
+            try {
+              const blob = await getAudioBlob(m.id);
+              if (blob) {
+                const base64 = await blobToBase64(blob);
+                return { ...m, voiceNoteBase64: base64 };
+              }
+            } catch (e) {
+              console.warn('Could not read audio blob for export:', e);
+            }
+          }
+          return m;
+        })
+      );
 
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `golden-echo-archive-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const backupData = {
+        app: 'Golden Echo',
+        version: '3.0',
+        exportedAt: new Date().toISOString(),
+        memories: memoriesWithAudio,
+        visions,
+        settings,
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `golden-echo-archive-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export failed:', e);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,25 +87,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (Array.isArray(parsed.memories) && Array.isArray(parsed.visions)) {
+          const sanitizedMemories = await Promise.all(
+            parsed.memories.map(async (m: MemoryEntry & { voiceNoteBase64?: string }) => {
+              const base64 = m.voiceNoteBase64 || (m.voiceNoteUrl?.startsWith('data:audio') ? m.voiceNoteUrl : undefined);
+              if (base64) {
+                try {
+                  const blob = base64ToBlob(base64);
+                  await saveAudioBlob(m.id, blob, m.voiceNoteDuration);
+                  return {
+                    ...m,
+                    hasVoiceNote: true,
+                    voiceNoteUrl: undefined,
+                    voiceNoteBase64: undefined,
+                  };
+                } catch (err) {
+                  console.warn('Could not restore audio blob:', err);
+                }
+              }
+              return {
+                ...m,
+                voiceNoteBase64: undefined,
+              };
+            })
+          );
+
           onImportData({
-            memories: parsed.memories,
+            memories: sanitizedMemories,
             visions: parsed.visions,
             settings: parsed.settings,
           });
-          alert('Heirloom archive successfully restored!');
-          onClose();
+          setNotice('Heirloom archive successfully restored.');
+          setTimeout(() => onClose(), 800);
         } else {
-          alert('The selected file does not appear to be a valid Golden Echo archive.');
+          setNotice('The selected file does not appear to be a valid Golden Echo archive.');
         }
       } catch {
-        alert('Could not parse the backup file.');
+        setNotice('Could not parse the backup file.');
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleReset = async () => {
+    if (confirm('Clear archive and start fresh with an empty canvas? (Settings will also reset to default)')) {
+      await clearAllAudio();
+      onResetToDefaults();
+      onClose();
+    }
   };
 
   return (
@@ -228,20 +287,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <span className="text-xs font-semibold uppercase tracking-wider text-stone-600 block mb-3">
               Backup & Family Archiving
             </span>
+            {notice && (
+              <div className="mb-3 rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-stone-800">
+                {notice}
+              </div>
+            )}
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={handleExport}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100"
+                disabled={isExporting}
+                className="flex items-center gap-1.5 rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50 cursor-pointer"
               >
                 <Download className="h-3.5 w-3.5 text-stone-600" />
-                <span>Export Archive (.json)</span>
+                <span>{isExporting ? 'Preparing Archive...' : 'Export Archive (.json)'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100"
+                className="flex items-center gap-1.5 rounded-lg border border-stone-300 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 cursor-pointer"
               >
                 <Upload className="h-3.5 w-3.5 text-stone-600" />
                 <span>Restore Archive</span>
@@ -256,13 +321,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  if (confirm('Clear archive and start fresh with an empty canvas? (Settings will also reset to default)')) {
-                    onResetToDefaults();
-                    onClose();
-                  }
-                }}
-                className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-100 ml-auto"
+                onClick={handleReset}
+                className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-100 ml-auto cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5 text-rose-600" />
                 <span>Start Fresh (Clear Archive)</span>

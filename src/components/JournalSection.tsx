@@ -11,6 +11,7 @@ interface JournalSectionProps {
   onEditMemory: (memory: MemoryEntry) => void;
   onDeleteMemory: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onCarryForward?: (memory: MemoryEntry) => void;
 }
 
 export const JournalSection: React.FC<JournalSectionProps> = ({
@@ -20,6 +21,7 @@ export const JournalSection: React.FC<JournalSectionProps> = ({
   onEditMemory,
   onDeleteMemory,
   onToggleFavorite,
+  onCarryForward,
 }) => {
   const [selectedEra, setSelectedEra] = useState<LifeEra | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,7 +33,7 @@ export const JournalSection: React.FC<JournalSectionProps> = ({
     { id: 'all', label: 'All Chapters' },
     { id: 'roots', label: 'Roots & Childhood' },
     { id: 'youth', label: 'Youth & Coming of Age' },
-    { id: 'family', label: 'Family & Traditions' },
+    { id: 'family', label: 'Loved Ones & Traditions' },
     { id: 'everyday', label: 'Everyday Joys' },
     { id: 'wisdom', label: 'Wisdom & Legacy' },
   ];
@@ -198,6 +200,7 @@ export const JournalSection: React.FC<JournalSectionProps> = ({
                 onEdit={onEditMemory}
                 onDelete={onDeleteMemory}
                 onToggleFavorite={onToggleFavorite}
+                onCarryForward={onCarryForward}
               />
             ))}
           </div>

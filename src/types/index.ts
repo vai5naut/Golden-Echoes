@@ -8,6 +8,8 @@ export type TimeHorizon = 'This Season' | 'This Year' | 'Someday';
 
 export type ColorTheme = 'warm-parchment' | 'sepia' | 'high-contrast' | 'twilight';
 
+export type IntendedAudience = 'Just me' | 'My children' | 'My grandchildren' | 'Someone special' | 'Choose later';
+
 export interface MemoryEntry {
   id: string;
   title: string;
@@ -20,8 +22,13 @@ export interface MemoryEntry {
   mood: MoodType;
   photoUrl?: string;
   photoCaption?: string;
+  hasVoiceNote?: boolean;
   voiceNoteUrl?: string;
   voiceNoteDuration?: number;
+  intendedAudience?: IntendedAudience;
+  intendedAudienceName?: string;
+  linkedForwardTitle?: string;
+  linkedForwardStep?: string;
   isFavorite?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +42,8 @@ export interface VisionItem {
   smallStep: string;
   imageUrl?: string;
   notes?: string;
+  originMemoryId?: string;
+  originMemoryTitle?: string;
   completed: boolean;
   completedAt?: string;
   createdAt: string;
@@ -52,5 +61,7 @@ export interface MemoryPrompt {
   text: string;
   era: LifeEra;
   eraLabel: string;
+  sensoryCue?: string;
   followUp: string;
 }
+

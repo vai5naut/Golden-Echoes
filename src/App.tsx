@@ -1,21 +1,16 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect } from 'react';
-import { MemoryEntry, VisionItem, ComfortSettings, MemoryPrompt } from './types';
+import { MemoryEntry, VisionItem, ComfortSettings, MemoryPrompt, VisionCategory } from './types';
 import { 
   INITIAL_MEMORIES, INITIAL_VISIONS, DEFAULT_SETTINGS,
   HERO_JOURNAL_IMAGE, COASTAL_WALK_IMAGE, COTTAGE_GARDEN_IMAGE, FAMILY_TABLE_IMAGE,
   COZY_MORNING_IMAGE, ART_STUDIO_IMAGE, MOUNTAIN_LAKE_IMAGE, FIRESIDE_HEARTH_IMAGE
 } from './data/seedData';
 import { soundscapes, SoundscapeType } from './utils/soundscapes';
-import { Header } from './components/Header';
-import { HeroSection } from './components/HeroSection';
+import { saveAudioBlob, deleteAudioBlob, clearAllAudio, base64ToBlob } from './utils/audioStorage';
+import { Header, MainTabType } from './components/Header';
+import { TodaySection } from './components/TodaySection';
 import { JournalSection } from './components/JournalSection';
 import { VisionBoard } from './components/VisionBoard';
-import { GentleMoments } from './components/GentleMoments';
 import { MemoryComposer } from './components/MemoryComposer';
 import { BookletModal } from './components/BookletModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -41,7 +36,6 @@ export default function App() {
   // Application Data States with LocalStorage Persistence
   const [memories, setMemories] = useState<MemoryEntry[]>(() => {
     try {
-      // Check v3 key first
       const savedV3 = localStorage.getItem(STORAGE_KEY_MEMORIES);
       if (savedV3) {
         const parsed: MemoryEntry[] = JSON.parse(savedV3);
@@ -52,7 +46,6 @@ export default function App() {
         }));
       }
 
-      // Check older v2 key and filter out default initial additions ('mem-1', 'mem-2', 'mem-3')
       const savedV2 = localStorage.getItem('golden_echo_memories_v2');
       if (savedV2) {
         const parsed: MemoryEntry[] = JSON.parse(savedV2);
@@ -71,7 +64,6 @@ export default function App() {
 
   const [visions, setVisions] = useState<VisionItem[]>(() => {
     try {
-      // Check v3 key first
       const savedV3 = localStorage.getItem(STORAGE_KEY_VISIONS);
       if (savedV3) {
         const parsed: VisionItem[] = JSON.parse(savedV3);
@@ -82,7 +74,6 @@ export default function App() {
         }));
       }
 
-      // Check older v2 key and filter out default initial additions ('vis-1' to 'vis-5')
       const savedV2 = localStorage.getItem('golden_echo_visions_v2');
       if (savedV2) {
         const parsed: VisionItem[] = JSON.parse(savedV2);
@@ -108,8 +99,8 @@ export default function App() {
     }
   });
 
-  // Active Navigation Tab
-  const [activeTab, setActiveTab] = useState<'journal' | 'vision' | 'moments'>('journal');
+  // 4 Primary Navigation Destinations: Today, My Stories, Looking Forward, Keepsake
+  const [activeTab, setActiveTab] = useState<MainTabType>('today');
 
   // Modals & Composer States
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -117,6 +108,9 @@ export default function App() {
   const [activePromptForDraft, setActivePromptForDraft] = useState<MemoryPrompt | null>(null);
   const [isBookletOpen, setIsBookletOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Seed data when carrying forward a hope from a memory
+  const [forwardSeed, setForwardSeed] = useState<{ title?: string; step?: string; origin?: string } | null>(null);
 
   // Soundscape State
   const [isPlayingSoundscape, setIsPlayingSoundscape] = useState(false);
@@ -127,7 +121,7 @@ export default function App() {
     try {
       localStorage.setItem(STORAGE_KEY_MEMORIES, JSON.stringify(memories));
     } catch {
-      // ignore quota errors
+      // ignore quota
     }
   }, [memories]);
 
@@ -135,7 +129,7 @@ export default function App() {
     try {
       localStorage.setItem(STORAGE_KEY_VISIONS, JSON.stringify(visions));
     } catch {
-      // ignore quota errors
+      // ignore quota
     }
   }, [visions]);
 
@@ -151,11 +145,9 @@ export default function App() {
   useEffect(() => {
     document.documentElement.style.setProperty('--app-font-scale', String(settings.fontScale));
     
-    // Apply body theme classes
     document.body.classList.remove('theme-warm-parchment', 'theme-sepia', 'theme-high-contrast', 'theme-twilight');
     document.body.classList.add(`theme-${settings.colorTheme}`);
 
-    // Manage scroll behavior for reduced motion
     if (settings.reducedMotion) {
       document.documentElement.style.scrollBehavior = 'auto';
     } else {
@@ -182,22 +174,84 @@ export default function App() {
     setIsPlayingSoundscape(true);
   };
 
-  // Memory CRUD
-  const handleSaveMemory = (entryData: Omit<MemoryEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (editingMemory) {
-      setMemories(prev => prev.map(m => m.id === editingMemory.id ? {
+  // Graceful migration: move any legacy base64 audio recordings into IndexedDB Blobs
+  useEffect(() => {
+    const legacyMemories = memories.filter(m => m.voiceNoteUrl && m.voiceNoteUrl.startsWith('data:audio'));
+    if (legacyMemories.length > 0) {
+      Promise.all(
+        legacyMemories.map(async m => {
+          try {
+            const blob = base64ToBlob(m.voiceNoteUrl!);
+            await saveAudioBlob(m.id, blob, m.voiceNoteDuration);
+          } catch (e) {
+            console.warn('Migration failed for voice note:', m.id, e);
+          }
+        })
+      ).then(() => {
+        setMemories(prev =>
+          prev.map(m =>
+            m.voiceNoteUrl?.startsWith('data:audio')
+              ? { ...m, hasVoiceNote: true, voiceNoteUrl: undefined }
+              : m
+          )
+        );
+      });
+    }
+  }, []);
+
+  // Memory CRUD & Core Journey Flow: REMEMBER → PRESERVE → REFLECT → LOOK FORWARD
+  const handleSaveMemory = async (
+    entryData: Omit<MemoryEntry, 'id' | 'createdAt' | 'updatedAt'>,
+    carryForward?: { title: string; smallStep: string; category?: VisionCategory },
+    audioBlob?: Blob
+  ) => {
+    let memoryId = editingMemory?.id;
+
+    if (editingMemory && memoryId) {
+      if (audioBlob) {
+        await saveAudioBlob(memoryId, audioBlob, entryData.voiceNoteDuration);
+      } else if (!entryData.hasVoiceNote && editingMemory.hasVoiceNote) {
+        // User explicitly cleared/removed the voice note
+        await deleteAudioBlob(memoryId);
+      }
+
+      setMemories(prev => prev.map(m => m.id === memoryId ? {
         ...m,
         ...entryData,
+        hasVoiceNote: Boolean(audioBlob || (entryData.hasVoiceNote && m.hasVoiceNote)),
+        voiceNoteUrl: undefined, // keep large base64 data out of localStorage
         updatedAt: new Date().toISOString(),
       } : m));
     } else {
+      memoryId = `mem-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      if (audioBlob) {
+        await saveAudioBlob(memoryId, audioBlob, entryData.voiceNoteDuration);
+      }
       const newEntry: MemoryEntry = {
         ...entryData,
-        id: `mem-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        id: memoryId,
+        hasVoiceNote: Boolean(audioBlob || entryData.hasVoiceNote),
+        voiceNoteUrl: undefined, // keep large base64 data out of localStorage
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       setMemories(prev => [newEntry, ...prev]);
+    }
+
+    // Step 4: If user chose to carry forward a little of this memory into a future intention
+    if (carryForward && carryForward.title.trim()) {
+      const newHope: VisionItem = {
+        id: `vis-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        title: carryForward.title.trim(),
+        category: carryForward.category || 'Simple Joys',
+        timeHorizon: 'This Season',
+        smallStep: carryForward.smallStep.trim() || 'Notice and welcome this possibility today.',
+        originMemoryId: memoryId,
+        originMemoryTitle: entryData.title,
+        completed: false,
+        createdAt: new Date().toISOString(),
+      };
+      setVisions(prev => [newHope, ...prev]);
     }
 
     setIsComposerOpen(false);
@@ -212,6 +266,7 @@ export default function App() {
   };
 
   const handleDeleteMemory = (id: string) => {
+    deleteAudioBlob(id).catch(console.error);
     setMemories(prev => prev.filter(m => m.id !== id));
   };
 
@@ -225,19 +280,19 @@ export default function App() {
     setIsComposerOpen(true);
   };
 
-  const handleStartMemoryWithPrompt = (promptText: string, suggestedTitle?: string) => {
+  const handleStartStoryWithPrompt = (promptText: string, suggestedTitle?: string) => {
     setActivePromptForDraft({
-      id: `custom-${Date.now()}`,
+      id: `prompt-${Date.now()}`,
       text: promptText,
-      era: 'everyday',
-      eraLabel: 'Everyday Joys',
-      followUp: ''
+      era: 'roots',
+      eraLabel: 'Roots & Childhood',
+      followUp: '',
     });
     setEditingMemory({
       id: '',
       title: suggestedTitle || '',
       text: '',
-      era: 'everyday',
+      era: 'roots',
       mood: 'Loved',
       createdAt: '',
       updatedAt: '',
@@ -245,7 +300,16 @@ export default function App() {
     setIsComposerOpen(true);
   };
 
-  // Vision CRUD
+  const handleCarryForwardFromMemory = (memory: MemoryEntry) => {
+    setForwardSeed({
+      title: `Experience or make something inspired by "${memory.title}"`,
+      step: 'Notice a time this week to carry this forward',
+      origin: memory.title,
+    });
+    setActiveTab('forward');
+  };
+
+  // Vision / Looking Forward CRUD
   const handleAddVision = (visionData: Omit<VisionItem, 'id' | 'createdAt'>) => {
     const newItem: VisionItem = {
       ...visionData,
@@ -253,6 +317,7 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
     setVisions(prev => [newItem, ...prev]);
+    setForwardSeed(null);
   };
 
   const handleToggleVisionComplete = (id: string) => {
@@ -274,7 +339,8 @@ export default function App() {
     if (imported.settings) setSettings(imported.settings);
   };
 
-  const handleResetToDefaults = () => {
+  const handleResetToDefaults = async () => {
+    await clearAllAudio().catch(console.error);
     setMemories([]);
     setVisions([]);
     setSettings(DEFAULT_SETTINGS);
@@ -296,12 +362,10 @@ export default function App() {
     'twilight': 'bg-stone-900 text-stone-100',
   }[settings.colorTheme];
 
-  const favoriteCount = memories.filter(m => m.isFavorite).length;
-
   return (
     <div className={`min-h-screen flex flex-col transition-colors ${themeBgClasses}`}>
       
-      {/* Top Bar Contract (Brand - 4 Nav Links - Primary Utility Actions) */}
+      {/* Top Header: Brand Wordmark & 4 Clear Destinations: Today, My Stories, Looking Forward, Keepsake */}
       <Header
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -310,7 +374,6 @@ export default function App() {
           setActivePromptForDraft(null);
           setIsComposerOpen(true);
         }}
-        onOpenBooklet={() => setIsBookletOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isPlayingSoundscape={isPlayingSoundscape}
         currentSoundscape={currentSoundscape}
@@ -319,24 +382,24 @@ export default function App() {
 
       {/* Main Content Viewport */}
       <main id="main" className="flex-1">
-        
-        {/* Editorial Hero Section with Archival Anchor */}
-        <HeroSection
-          memoryCount={memories.length}
-          visionCount={visions.length}
-          favoriteCount={favoriteCount}
-          onWriteMemory={() => {
-            setEditingMemory(null);
-            setActivePromptForDraft(null);
-            setIsComposerOpen(true);
-          }}
-          onExploreVisions={() => setActiveTab('vision')}
-        />
-
-        {/* Tabbed Content Sections */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           
-          {activeTab === 'journal' && (
+          {/* 1. Destination: TODAY (Home experience with Today's Echo) */}
+          {activeTab === 'today' && (
+            <TodaySection
+              onStartStoryWithPrompt={handleStartStoryWithPrompt}
+              onNavigateToStories={() => setActiveTab('stories')}
+              onNavigateToForward={() => setActiveTab('forward')}
+              memories={memories}
+              isPlayingSoundscape={isPlayingSoundscape}
+              currentSoundscape={currentSoundscape}
+              onSoundscapeChange={handleChangeSoundscape}
+              onToggleSoundscape={handleToggleSoundscape}
+            />
+          )}
+
+          {/* 2. Destination: MY STORIES (Memory Archive) */}
+          {activeTab === 'stories' && (
             <JournalSection
               memories={memories}
               onSelectPromptToDraft={handlePromptSelect}
@@ -348,30 +411,33 @@ export default function App() {
               onEditMemory={handleEditMemory}
               onDeleteMemory={handleDeleteMemory}
               onToggleFavorite={handleToggleFavorite}
+              onCarryForward={handleCarryForwardFromMemory}
             />
           )}
 
-          {activeTab === 'vision' && (
+          {/* 3. Destination: LOOKING FORWARD (Things I'm Looking Forward To) */}
+          {activeTab === 'forward' && (
             <VisionBoard
               visions={visions}
               onAddVision={handleAddVision}
               onToggleComplete={handleToggleVisionComplete}
               onDeleteVision={handleDeleteVision}
+              initialAddTitle={forwardSeed?.title}
+              initialAddStep={forwardSeed?.step}
+              originMemoryTitle={forwardSeed?.origin}
             />
           )}
 
-          {activeTab === 'moments' && (
-            <GentleMoments
-              onStartMemoryWithPrompt={handleStartMemoryWithPrompt}
-              isPlayingSoundscape={isPlayingSoundscape}
-              currentSoundscape={currentSoundscape}
-              onSoundscapeChange={handleChangeSoundscape}
-              onToggleSoundscape={handleToggleSoundscape}
+          {/* 4. Destination: KEEPSAKE (Heirloom Book Experience) */}
+          {activeTab === 'keepsake' && (
+            <BookletModal
+              isInlineView={true}
+              memories={memories}
+              visions={visions}
             />
           )}
 
         </div>
-
       </main>
 
       {/* Modals & Dialogs */}
@@ -391,6 +457,7 @@ export default function App() {
       {isBookletOpen && (
         <BookletModal
           memories={memories}
+          visions={visions}
           onClose={() => setIsBookletOpen(false)}
         />
       )}
@@ -398,43 +465,14 @@ export default function App() {
       {isSettingsOpen && (
         <SettingsModal
           settings={settings}
-          onUpdateSettings={newS => setSettings(prev => ({ ...prev, ...newS }))}
+          onUpdateSettings={(newSettings) => setSettings(prev => ({ ...prev, ...newSettings }))}
+          onResetToDefaults={handleResetToDefaults}
           memories={memories}
           visions={visions}
           onImportData={handleImportData}
-          onResetToDefaults={handleResetToDefaults}
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
-
-      {/* Dignified Archival Footer */}
-      <footer className="border-t border-stone-200/80 bg-stone-100/70 py-10 text-stone-600">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans">
-          <div className="flex items-center gap-2">
-            <span className="font-serif font-semibold text-stone-900 text-sm">Golden Echo</span>
-            <span aria-hidden="true" className="text-stone-300">·</span>
-            <span>A gentle home for memory, legacy, and hope</span>
-          </div>
-
-          <div className="flex items-center gap-4 text-stone-500">
-            <button
-              onClick={() => setIsBookletOpen(true)}
-              className="hover:text-stone-900 transition-colors"
-            >
-              Print Heirloom Book
-            </button>
-            <span aria-hidden="true" className="text-stone-300">·</span>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="hover:text-stone-900 transition-colors"
-            >
-              Accessibility & Privacy
-            </button>
-            <span aria-hidden="true" className="text-stone-300">·</span>
-            <span>Local & Private</span>
-          </div>
-        </div>
-      </footer>
 
     </div>
   );

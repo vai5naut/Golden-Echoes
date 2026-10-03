@@ -99,88 +99,84 @@ export const INITIAL_VISIONS: VisionItem[] = [];
 
 export const MEMORY_PROMPTS: MemoryPrompt[] = [
   {
-    id: 'p-1',
-    text: 'Think of a meal that brings back a warm memory. Who was there with you and what aromas filled the room?',
+    id: 'p-sensory-1',
+    text: 'What sound instantly brings you back to your childhood?',
     era: 'roots',
     eraLabel: 'Roots & Childhood',
-    followUp: 'Was there a special dish that only appeared on holidays, or a simple soup that warmed a rainy day?'
+    sensoryCue: 'Think of morning milk bottles, the radio playing in the kitchen, birds outside the screen door, or rain on the roof.',
+    followUp: 'What did that sound feel like to wake up to or fall asleep with?'
   },
   {
-    id: 'p-2',
-    text: 'What was a journey you still remember clearly? What made it unforgettable?',
+    id: 'p-sensory-2',
+    text: 'What smell reminds you immediately of home?',
+    era: 'roots',
+    eraLabel: 'Roots & Childhood',
+    sensoryCue: 'Woodsmoke, toasted bread, cardamom, clean linen, damp garden soil, or fresh floor wax.',
+    followUp: 'Who was usually nearby when that smell filled the rooms?'
+  },
+  {
+    id: 'p-sensory-3',
+    text: 'Was there a place you went when you wanted some peace?',
     era: 'youth',
     eraLabel: 'Youth & Coming of Age',
-    followUp: 'Was it the destination, the travelling companion, or the unexpected detour along the way?'
+    sensoryCue: 'A secret garden bench, the library corner, an attic window, or a bend in the river.',
+    followUp: 'What could you see and hear when you sat there alone?'
   },
   {
-    id: 'p-3',
-    text: 'Who taught you something that stayed with you throughout your whole life?',
-    era: 'roots',
-    eraLabel: 'Roots & Childhood',
-    followUp: 'Did they teach you with words, or simply by the quiet way they lived their daily life?'
-  },
-  {
-    id: 'p-4',
-    text: 'What did your childhood neighborhood sound and smell like on an early summer morning?',
-    era: 'roots',
-    eraLabel: 'Roots & Childhood',
-    followUp: 'Think of milk bottles clinking, screen doors snapping shut, or fresh-cut lawn grass.'
-  },
-  {
-    id: 'p-5',
-    text: 'Remember a celebration or gathering that made you feel completely surrounded by people you loved.',
-    era: 'family',
-    eraLabel: 'Family & Traditions',
-    followUp: 'Who was laughing the loudest? What songs were playing or stories being told?'
-  },
-  {
-    id: 'p-6',
-    text: 'What was your very first paid job, and what did you buy with your first pay packet?',
+    id: 'p-sensory-4',
+    text: 'What song takes you back to a particular person?',
     era: 'youth',
     eraLabel: 'Youth & Coming of Age',
-    followUp: 'How did that first taste of independence make you feel?'
+    sensoryCue: 'A melody playing on a car radio, someone humming while peeling apples, or a dance hall tune.',
+    followUp: 'What were you wearing or doing the first time you heard it together?'
   },
   {
-    id: 'p-7',
-    text: 'Which keepsake or heirloom in your home carries a story you would like someone else to cherish?',
-    era: 'family',
-    eraLabel: 'Family & Traditions',
-    followUp: 'Where did it come from, and whose hands held it before yours?'
+    id: 'p-sensory-5',
+    text: 'What could you hear outside your childhood home in the morning?',
+    era: 'roots',
+    eraLabel: 'Roots & Childhood',
+    sensoryCue: 'Early morning birds, a neighbor sweeping the porch, distant train whistles, or rattling teacups.',
+    followUp: 'Did the world outside feel quiet, bustling, or full of possibilities?'
   },
   {
-    id: 'p-8',
-    text: 'What was a season of hardship or uncertainty you walked through, and what carried you to the other side?',
-    era: 'wisdom',
-    eraLabel: 'Life Wisdom & Legacy',
-    followUp: 'What did that experience show you about your own quiet resilience?'
-  },
-  {
-    id: 'p-9',
-    text: 'Think of a loyal pet or animal companion that brought genuine joy to your life.',
+    id: 'p-sensory-6',
+    text: 'What meal made an ordinary day feel special?',
     era: 'everyday',
     eraLabel: 'Everyday Joys & Habits',
-    followUp: 'What funny or endearing habit did they have that always made you smile?'
+    sensoryCue: 'Hot fresh rotis or bread with butter, a simmering pot of soup, or sweet tea poured into glass tumblers.',
+    followUp: 'Whose hands prepared it, and what did the kitchen feel like?'
   },
   {
-    id: 'p-10',
-    text: 'If you could whisper one gentle piece of advice to your twenty-year-old self, what would it be?',
+    id: 'p-sensory-7',
+    text: 'Was there something someone used to say that you still remember?',
     era: 'wisdom',
     eraLabel: 'Life Wisdom & Legacy',
-    followUp: 'Would it be about worry, love, patience, or taking more chances?'
+    sensoryCue: 'A quiet phrase of comfort, a witty proverb, or a daily goodbye at the door.',
+    followUp: 'What tone of voice did they use when they spoke those words?'
   },
   {
-    id: 'p-11',
+    id: 'p-sensory-8',
+    text: 'What did celebrations feel like in your home?',
+    era: 'family',
+    eraLabel: 'Family & Traditions',
+    sensoryCue: 'Lanterns, rustling festival clothes, laughter echoing across long dining tables, and warm sweet treats.',
+    followUp: 'Who was laughing the loudest, and what traditions were kept?'
+  },
+  {
+    id: 'p-sensory-9',
     text: 'Describe an ordinary afternoon from decades ago that now feels like pure gold.',
     era: 'everyday',
     eraLabel: 'Everyday Joys & Habits',
-    followUp: 'What were you doing? Was there afternoon tea, rain on the roof, or gentle music?'
+    sensoryCue: 'Sitting on the veranda watching the clouds, mending socks, listening to classical records, or walking slowly.',
+    followUp: 'What made that ordinary hour stay with you across a lifetime?'
   },
   {
-    id: 'p-12',
-    text: 'What was a tradition your family held that you hope will continue for generations to come?',
-    era: 'family',
-    eraLabel: 'Family & Traditions',
-    followUp: 'How did it begin, and what made everyone look forward to it?'
+    id: 'p-sensory-10',
+    text: 'What was a journey you still remember clearly? What was the first thing you felt when you arrived?',
+    era: 'youth',
+    eraLabel: 'Youth & Coming of Age',
+    sensoryCue: 'The smell of salt sea spray, cold mountain pine air, or the clatter of a railway platform.',
+    followUp: 'Who was beside you, and what did you laugh about along the way?'
   }
 ];
 

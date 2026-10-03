@@ -36,21 +36,35 @@ export async function fetchGuidedReflection(
     console.warn('Using client-side heuristic reflection:', e);
   }
 
-  // Fallback heuristic following the exact Core Directives
+  // Fallback heuristic following the exact Core Directives and safety rules
   const lower = (memoryText + ' ' + (meta?.title || '')).toLowerCase();
 
+  // Boundary check
+  if (lower.includes('not today') || lower.includes("don't want to talk") || lower.includes("leave it") || lower.includes("stop") || lower.includes("uncomfortable")) {
+    return "We can leave this memory here. We can choose another memory whenever you'd like.";
+  }
+
+  // Roti / chai / morning kitchen pattern
+  if (lower.includes('roti') || lower.includes('chai') || (lower.includes('mother') && lower.includes('morning'))) {
+    return 'Those quiet mornings seem to have stayed very vivid. What could you hear while she was cooking?';
+  }
+
   if (lower.includes('kitchen') || lower.includes('dinner') || lower.includes('meal') || lower.includes('cook') || lower.includes('bread') || lower.includes('table')) {
-    return 'It sounds like that kitchen held a very distinct warmth. What specific sounds or smells stand out most vividly when you picture yourself sitting at that table?';
+    return 'That room seems to have had a very distinct warmth and rhythm. What specific sound or smell comes back first when you picture yourself there?';
   }
   if (lower.includes('road') || lower.includes('journey') || lower.includes('drive') || lower.includes('trip') || lower.includes('sea') || lower.includes('beach')) {
-    return 'There is such a feeling of open horizon in that journey. What was the very first sensation you felt on your skin when you arrived at that destination?';
+    return 'There is such a sense of open air in that journey. What was the very first sensation you remember feeling when you arrived?';
   }
   if (lower.includes('work') || lower.includes('job') || lower.includes('proud') || meta?.mood === 'Proud') {
     return 'That feels like such a quiet turning point. Looking back at yourself in that moment, what do you think you needed most?';
   }
   if (meta?.mood === 'Loved' || lower.includes('grandmother') || lower.includes('friend') || lower.includes('together')) {
-    return 'The presence of that person clearly left a deep and lasting imprint. What expression on their face or tone in their voice do you remember most clearly?';
+    return 'The presence of that person clearly left a lasting impression. What expression on their face or phrase they often said stands out most?';
+  }
+  if (lower.includes('hate') || lower.includes('hard') || lower.includes('sad') || lower.includes('difficult') || lower.includes('hurt')) {
+    return 'That moment clearly carries some weight. What do you remember most clearly about the surroundings right then?';
   }
 
-  return 'That moment carries a very peaceful and heartfelt resonance. When you gently return to that exact scene, what small sensory detail stands out most clearly to you?';
+  return 'That moment holds a very vivid thread. When you gently return to that scene, what small sensory detail stands out most clearly to you?';
 }
+
